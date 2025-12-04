@@ -4,29 +4,46 @@ An intelligent resume screening application that uses AI to analyze candidate re
 
 ## 🎯 Features
 
-- **Job Description Management**: Update and store job descriptions for screening
-- **Resume Upload**: Drag-and-drop PDF resume upload
-- **AI-Powered Analysis**: OpenAI-based intelligent resume evaluation
-- **Visual Dashboard**: Interactive analysis dashboard with:
+- **Job Description Management**: Update and store job descriptions with auto-save to file
+- **Resume Upload & Preview**: Drag-and-drop PDF upload with live PDF preview
+- **AI-Powered Analysis**: Azure OpenAI-based intelligent resume evaluation
+- **Candidate Management**: SQLite database storing all candidates with 5-star ratings
+- **Interactive Dashboard**: 
   - Overall match score (0-100)
   - Candidate strengths and gaps
-  - Detailed skill assessments
+  - Detailed skill assessments (Technical, Experience, Education, Communication)
   - Hiring recommendations
+- **AI Chat Assistant**: Ask questions about candidates with markdown support (tables, lists, code blocks)
+- **Modern UI/UX**:
+  - Floating sidebars (candidates list & chat) with toggle buttons
+  - Auto-scaling panels to fit screen size
+  - PDF resume preview with placeholder
+  - Toast notifications (non-blocking)
+  - Responsive layout with 3-panel design
+  - Chat history persistence (localStorage)
+  - Markdown table rendering in chat
 
 ## 🏗️ Architecture
 
 ```
 ResumeScreening/
 ├── backend/              # FastAPI server
-│   ├── main.py          # API endpoints
-│   ├── agent.py         # OpenAI agent logic
+│   ├── main.py          # API endpoints & CORS config
+│   ├── agent.py         # Azure OpenAI agent logic
 │   ├── pdf_parser.py    # PDF text extraction
+│   ├── database.py      # SQLite database & job description storage
+│   ├── data/            # SQLite DB & saved job description
 │   └── requirements.txt
-└── frontend/            # React app
+└── frontend/            # React app (Vite)
     ├── src/
-    │   ├── components/  # React components
-    │   ├── App.jsx      # Main application
-    │   └── App.css      # Styling
+    │   ├── components/  
+    │   │   ├── JobDescriptionForm.jsx
+    │   │   ├── ResumeUpload.jsx
+    │   │   ├── AnalysisDashboard.jsx
+    │   │   ├── CandidatesList.jsx
+    │   │   └── ChatWindow.jsx
+    │   ├── App.jsx      # Main application with state & layout
+    │   └── App.css      # Responsive 3-panel layout styling
     └── package.json
 ```
 
@@ -191,89 +208,170 @@ Frontend dev server: `http://localhost:3000`
 ## 📖 Usage
 
 1. **Set Job Description**: 
-   - Paste the job description in the left panel
+   - Enter the job description in the Job Description panel
    - Click "Update Job Description"
+   - Job description is auto-saved to file and persists across restarts
+   - Toast notification confirms save (non-blocking)
 
 2. **Upload Resume**:
    - Drag and drop a PDF resume or click to browse
-   - Click "Analyze Resume"
+   - Resume preview appears automatically in the right panel
+   - Click "Analyze Resume" to process
+   - Analysis creates a new candidate in the database
 
-3. **View Results**:
+3. **View Candidates**:
+   - Left sidebar shows all candidates with 5-star ratings
+   - Columns: Name, Date, Technical Skills, Experience, Education, Communication, Overall
+   - Click any candidate row to view detailed analysis
+   - Toggle sidebar visibility with arrow button
+
+4. **Chat with AI**:
+   - Right sidebar contains AI chat assistant
+   - Ask questions like "Who has the most experience?" or "Compare top 2 candidates"
+   - Supports markdown formatting including tables
+   - Chat history persists in browser
+   - Clear history button available
+   - Toggle sidebar visibility with arrow button
+
+5. **Review Analysis**:
    - See match score, strengths, gaps
    - Review detailed skill assessments
-   - Read hiring recommendations
+   - Read AI-generated hiring recommendations
 
 ## 🔧 API Endpoints
 
-### `POST /api/job-description`
-Update the job description
-```json
-{
-  "job_description": "string"
-}
-```
+### Job Description
+- **`POST /api/job-description`**: Update job description (saves to file)
+- **`GET /api/job-description`**: Retrieve current job description
 
-### `GET /api/job-description`
-Retrieve current job description
+### Resume Analysis
+- **`POST /api/analyze-resume`**: Upload and analyze resume (multipart/form-data)
+  - Returns: Match score, strengths, gaps, recommendations
+  - Saves candidate to SQLite database
 
-### `POST /api/analyze-resume`
-Upload and analyze resume (multipart/form-data)
-- Returns: Match score, strengths, gaps, recommendations
+### Candidates
+- **`GET /api/candidates`**: Get all candidates with ratings
+- **`GET /api/candidates/{id}`**: Get detailed candidate analysis
+- **`DELETE /api/candidates/{id}`**: Delete a candidate
 
-### `GET /api/health`
-Health check endpoint
+### Chat
+- **`POST /api/chat`**: Chat with AI about candidates
+  - Body: `{"message": "your question"}`
+  - Returns: AI response with candidate context
+
+### Health
+- **`GET /api/health`**: Health check endpoint
 
 ## 🧪 Development
 
 ### Backend Structure
 
-- **`main.py`**: FastAPI app with CORS, routes, and error handling
-- **`agent.py`**: OpenAI agent for resume analysis using structured prompts
+- **`main.py`**: FastAPI app with CORS, routes, error handling, and SQLite integration
+- **`agent.py`**: Azure OpenAI agent for resume analysis using structured prompts (JSON mode)
 - **`pdf_parser.py`**: PyPDF2-based text extraction
+- **`database.py`**: SQLite database manager for candidates and file-based job description storage
 
 ### Frontend Structure
 
-- **`App.jsx`**: Main component with state management
-- **`JobDescriptionForm.jsx`**: JD input component
+- **`App.jsx`**: Main component with state management, 3-panel layout, toast notifications
+- **`JobDescriptionForm.jsx`**: JD input with auto-load from backend
 - **`ResumeUpload.jsx`**: File upload with drag-and-drop
-- **`AnalysisDashboard.jsx`**: Results visualization
+- **`AnalysisDashboard.jsx`**: Results visualization with detailed metrics
+- **`CandidatesList.jsx`**: Sortable table with 5-star ratings for all candidates
+- **`ChatWindow.jsx`**: AI chat with markdown support (tables, code blocks, lists), localStorage persistence
+
+### Key Features Implementation
+
+- **Floating Sidebars**: CSS transforms for smooth slide in/out animations
+- **PDF Preview**: Blob URLs with iframe embedding
+- **Auto-scaling Panels**: CSS calc() for dynamic height based on viewport
+- **Markdown Rendering**: Custom parser with table support in `formatMarkdown()`
+- **Toast Notifications**: Fixed position with auto-dismiss (3s timeout)
+- **Data Persistence**: SQLite for candidates, file storage for job description, localStorage for chat history
 
 ## 🔐 Environment Variables
 
 ### Backend (.env)
 ```
-OPENAI_API_KEY=your_api_key
+# Azure OpenAI Configuration
+OPENAI_API_KEY=your_azure_openai_key
+OPENAI_ENDPOINT=https://your-instance.openai.azure.com
 OPENAI_MODEL=gpt-4o
+
+# Server Configuration
 PORT=8000
 HOST=0.0.0.0
+```
+
+### Example Azure OpenAI Setup
+```
+OPENAI_API_KEY=abc123...
+OPENAI_ENDPOINT=https://westpac-design-assistant-openai.openai.azure.com
+OPENAI_MODEL=gpt-4o
 ```
 
 ## 📝 Notes
 
 - **PDF Support**: Only PDF files are supported for resume upload
-- **API Key**: Requires valid OpenAI API key with access to chat models
+- **API Key**: Requires valid Azure OpenAI API key with access to chat models (gpt-4o recommended)
 - **Model**: Defaults to `gpt-4o` but can be changed in `.env`
-- **Data Storage**: Currently uses in-memory storage (job description resets on restart)
+- **Data Persistence**: 
+  - Candidates stored in SQLite database (`backend/data/resume_screening.db`)
+  - Job descriptions saved to file (`backend/data/job_description.txt`)
+  - Chat history stored in browser localStorage
+- **Browser Compatibility**: Modern browsers (Chrome, Edge, Firefox, Safari)
+- **Layout**: Optimized for wide screens (1920px+), responsive down to 1200px
+- **Performance**: Auto-scaling panels, lazy-loaded components, efficient state management
 
 ## 🚧 Future Enhancements
 
-- [ ] Database integration for persistence
-- [ ] Multiple job description support
-- [ ] Resume history and comparison
-- [ ] Batch resume processing
-- [ ] Export analysis reports
-- [ ] User authentication
-- [ ] Custom scoring criteria
+- [ ] ~~Database integration for persistence~~ ✅ Completed (SQLite)
+- [ ] ~~Resume preview in application~~ ✅ Completed (PDF iframe)
+- [ ] ~~Chat assistant for candidate queries~~ ✅ Completed (AI chat with markdown)
+- [ ] Advanced candidate filtering and sorting
+- [ ] Multiple job description support (job requisition management)
+- [ ] Resume history and comparison side-by-side
+- [ ] Batch resume processing (bulk upload)
+- [ ] Export analysis reports (PDF/Excel)
+- [ ] User authentication and role-based access
+- [ ] Custom scoring criteria and weights
+- [ ] Email integration for candidate communication
+- [ ] Interview scheduling integration
+- [ ] Advanced analytics dashboard (charts, trends)
+- [ ] Resume parsing improvements (structured data extraction)
+- [ ] Multi-language support
 
 ## 🌐 Deployment
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed Azure deployment instructions.
 
-Quick deploy to Azure:
-1. Create Azure App Service (Python 3.11)
-2. Set `OPENAI_API_KEY` in App Settings
-3. Add Azure publish profile to GitHub Secrets
-4. Push to `main` branch - auto deploys via GitHub Actions!
+Quick deploy to Azure Web App:
+1. Create Azure App Service (Python 3.11, Linux)
+2. Set environment variables in App Settings:
+   - `OPENAI_API_KEY`
+   - `OPENAI_ENDPOINT`
+   - `OPENAI_MODEL`
+3. Configure Startup Command: 
+   ```
+   gunicorn --bind=0.0.0.0:8000 --workers=4 --worker-class=uvicorn.workers.UvicornWorker main:app
+   ```
+4. Add Azure publish profile to GitHub Secrets
+5. Push to `main` branch - auto deploys via GitHub Actions!
+
+### Deployment Notes
+- Frontend is built and served by FastAPI (static files)
+- SQLite database persists in Azure App Service filesystem
+- Ensure sufficient disk space for resume storage
+- Configure CORS origins if using custom domain
+
+## 🎨 UI/UX Highlights
+
+- **3-Panel Layout**: Floating candidates sidebar (left), main content (center), chat sidebar (right)
+- **Responsive Design**: Adapts to screen sizes with media queries
+- **Smooth Animations**: CSS transitions for sidebar toggles, toast notifications
+- **Visual Feedback**: Toast notifications, loading states, hover effects
+- **Accessibility**: Semantic HTML, ARIA labels, keyboard navigation support
+- **Modern Stack**: React 18, Vite 6, Lucide icons, CSS Grid/Flexbox
 
 ## 📄 License
 
