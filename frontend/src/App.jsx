@@ -13,10 +13,10 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
-  const [isChatVisible, setIsChatVisible] = useState(true);
+  const [isChatVisible, setIsChatVisible] = useState(false);
   const [uploadedResumeFile, setUploadedResumeFile] = useState(null);
   const [resumePreviewUrl, setResumePreviewUrl] = useState(null);
-  const [isCandidatesVisible, setIsCandidatesVisible] = useState(true);
+  const [isCandidatesVisible, setIsCandidatesVisible] = useState(false);
   const [toast, setToast] = useState(null);
 
   // Show toast notification
@@ -153,7 +153,7 @@ function App() {
       </header>
 
       <main className="app-main">
-        <div className="main-content-wrapper">
+        <div className={`main-content-wrapper ${isCandidatesVisible ? 'candidates-visible' : ''} ${isChatVisible ? 'chat-visible' : ''}`}>
           {/* Left Sidebar: Candidates List */}
           <div className={`candidates-sidebar ${isCandidatesVisible ? 'visible' : 'hidden'}`}>
             <button 
