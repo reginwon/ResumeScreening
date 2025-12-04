@@ -33,7 +33,7 @@ function App() {
 
   const loadJobDescription = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/job-description');
+      const response = await fetch('/api/job-description');
       if (response.ok) {
         const data = await response.json();
         if (data && data.job_description) {
@@ -48,7 +48,7 @@ function App() {
 
   const loadCandidates = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/candidates');
+      const response = await fetch('/api/candidates');
       if (response.ok) {
         const data = await response.json();
         setCandidates(data || []);
@@ -62,7 +62,7 @@ function App() {
 
   const loadCandidateDetail = async (candidateId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/candidates/${candidateId}`);
+      const response = await fetch(`/api/candidates/${candidateId}`);
       if (response.ok) {
         const data = await response.json();
         setAnalysisResult(data.analysis);
@@ -75,7 +75,7 @@ function App() {
 
   const handleJobDescriptionUpdate = async (jd) => {
     try {
-      const response = await fetch('http://localhost:8000/api/job-description', {
+      const response = await fetch('/api/job-description', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ function App() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8000/api/analyze-resume', {
+      const response = await fetch('/api/analyze-resume', {
         method: 'POST',
         body: formData,
       });
