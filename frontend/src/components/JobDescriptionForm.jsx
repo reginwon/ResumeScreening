@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
 
 function JobDescriptionForm({ onSubmit, currentJD }) {
   const [jd, setJd] = useState(currentJD || '');
+
+  // Update local state when currentJD prop changes
+  useEffect(() => {
+    if (currentJD) {
+      setJd(currentJD);
+    }
+  }, [currentJD]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
