@@ -1,0 +1,34 @@
+About the job
+We’re seeking a Customer Platform Solution Architect to lead the strategic design and evolution of Suncorp’s Customer Data Platforms. This role is central to how we deliver personalisation at scale, drive data integrity, and enable seamless integration across marketing, sales and service journeys.
+
+You’ll guide solution design across a range of modern integration and governance tools, ensuring we have the right platform and data architecture to support current needs and future vision.
+
+What You’ll Do
+
+Architect the end-to-end customer and marketing data platform across CRM, MDM, Salesforce, APIs and event-based systems
+Lead design of customer master data solutions – including survivorship, identity resolution, and golden record logic
+Demonstrate expertise in architecting data solutions using platforms such as Redshift or Databricks, with a strong command of advanced data modelling techniques
+Enable data stewardship, consent management, and PII compliance through scalable architecture
+Support real-time integration between systems like Kafka, MuleSoft, and other enterprise applications
+Define platform patterns and guardrails aligned to strategic data models
+Create architecture views using ArchiMate methodology
+Collaborate closely with marketing, engineering, risk, and governance stakeholders
+Coach and influence teams to enhance architecture maturity and promote customer-centric thinking
+
+What You’ll Bring
+
+Deep solution architecture experience in Customer & Marketing Data Platforms, CRM or enterprise integration
+Strong knowledge of customer data models, hierarchical relationships, and segmentation logic
+Experience with event-driven design (e.g., Kafka), data contracts, and lineage tracking
+Comfort navigating complexity and leading cross-functional discussions with marketing, compliance, business and technology teams
+Experience in Data & Application Architecture including AWS services, Databricks and Integration technologies
+Familiarity with security, consent frameworks, PII handling, and governance best practices
+Clear communication skills and the emotional intelligence to influence across business and technology
+
+What You’ll Enjoy
+
+A range of flexible working and leave options, including 20 weeks paid parental leave, 4 weeks paid secondary carer parental leave and unlimited paid emergency response leave
+Discounts and offers on a range of retail favourite stores as well as insurance products
+Give back to our communities with payroll giving, donation matching and paid volunteer leave
+Invest in your brighter future with ongoing study support and career development programs; and
+Prioritise your work/life balance with our robust employee assistance program and dedicated employee council

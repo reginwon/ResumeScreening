@@ -2,6 +2,10 @@ import React from 'react';
 import { User, TrendingUp, CheckCircle, XCircle, Lightbulb, Award } from 'lucide-react';
 
 function AnalysisDashboard({ analysis }) {
+  if (!analysis) {
+    return null;
+  }
+
   const getScoreColor = (score) => {
     if (score >= 80) return '#10b981'; // green
     if (score >= 60) return '#f59e0b'; // orange
@@ -91,9 +95,12 @@ function AnalysisDashboard({ analysis }) {
             <h3>Strengths</h3>
           </div>
           <ul>
-            {analysis.strengths.map((strength, idx) => (
+            {Array.isArray(analysis.strengths) && analysis.strengths.map((strength, idx) => (
               <li key={idx}>{strength}</li>
             ))}
+            {(!analysis.strengths || analysis.strengths.length === 0) && (
+              <li>No strengths identified</li>
+            )}
           </ul>
         </div>
 
@@ -103,9 +110,12 @@ function AnalysisDashboard({ analysis }) {
             <h3>Gaps & Areas for Consideration</h3>
           </div>
           <ul>
-            {analysis.gaps.map((gap, idx) => (
+            {Array.isArray(analysis.gaps) && analysis.gaps.map((gap, idx) => (
               <li key={idx}>{gap}</li>
             ))}
+            {(!analysis.gaps || analysis.gaps.length === 0) && (
+              <li>No gaps identified</li>
+            )}
           </ul>
         </div>
       </div>
@@ -114,12 +124,14 @@ function AnalysisDashboard({ analysis }) {
       <div className="detailed-analysis">
         <h3>Detailed Assessment</h3>
         <div className="details-grid">
-          {Object.entries(analysis.detailed_analysis).map(([key, value]) => (
-            <div key={key} className="detail-item">
-              <h4>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
-              <p>{value}</p>
-            </div>
-          ))}
+          {analysis.detailed_analysis && typeof analysis.detailed_analysis === 'object' && 
+            Object.entries(analysis.detailed_analysis).map(([key, value]) => (
+              <div key={key} className="detail-item">
+                <h4>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
+                <p>{value}</p>
+              </div>
+            ))
+          }
         </div>
       </div>
 

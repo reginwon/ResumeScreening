@@ -14,6 +14,7 @@ load_dotenv()
 
 from agent import ResumeScreeningAgent
 from pdf_parser import extract_text_from_pdf
+from database import Database, JobDescriptionStorage
 
 app = FastAPI(title="Resume Screening API")
 
@@ -26,8 +27,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory storage (replace with database in production)
-job_description_store = {"jd": ""}
+# Initialize database and storage
+db = Database()
+jd_storage = JobDescriptionStorage()
+
+# Load job description from file on startup
+job_description_store = {"jd": jd_storage.load()}
 
 # Initialize the agent
 agent = ResumeScreeningAgent()
@@ -45,6 +50,7 @@ class AnalysisResponse(BaseModel):
     gaps: list[str]
     recommendations: str
     detailed_analysis: dict
+    candidate_id: Optional[int] = None
 
 
 @app.post("/api/job-description")
@@ -53,7 +59,10 @@ async def update_job_description(jd: JobDescriptionUpdate):
     if not jd.job_description.strip():
         raise HTTPException(status_code=400, detail="Job description cannot be empty")
     
+    # Save to both memory and file
     job_description_store["jd"] = jd.job_description
+    jd_storage.save(jd.job_description)
+    
     return {
         "message": "Job description updated successfully",
         "job_description": jd.job_description
@@ -105,6 +114,10 @@ async def analyze_resume(file: UploadFile = File(...)):
             job_description=job_description_store["jd"]
         )
         
+        # Store candidate in database
+        candidate_id = db.add_candidate(resume_text, analysis)
+        analysis["candidate_id"] = candidate_id
+        
         return analysis
     
     except Exception as e:
@@ -122,6 +135,78 @@ async def health_check():
         "agent_ready": agent.is_ready(),
         "job_description_set": bool(job_description_store.get("jd"))
     }
+
+
+@app.get("/api/candidates")
+async def get_candidates():
+    """Get all candidates with their metrics"""
+    candidates = db.get_all_candidates()
+    return candidates
+
+
+@app.get("/api/candidates/{candidate_id}")
+async def get_candidate_detail(candidate_id: int):
+    """Get full details for a specific candidate"""
+    candidate = db.get_candidate_by_id(candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    return candidate
+
+
+@app.delete("/api/candidates/{candidate_id}")
+async def delete_candidate(candidate_id: int):
+    """Delete a candidate"""
+    deleted = db.delete_candidate(candidate_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    return {"message": "Candidate deleted successfully"}
+
+
+class ChatMessage(BaseModel):
+    message: str
+    candidate_id: Optional[int] = None
+
+
+@app.post("/api/chat")
+async def chat_about_candidates(chat: ChatMessage):
+    """
+    Chat about candidates with AI
+    Provides context from all stored resumes
+    """
+    if not chat.message.strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    
+    # Get all resumes for context
+    resumes = db.get_all_resumes_text()
+    
+    if not resumes:
+        raise HTTPException(status_code=400, detail="No candidates in database")
+    
+    # Build context from all resumes
+    context = "You are an HR assistant helping to answer questions about job candidates.\n\n"
+    context += f"Job Description:\n{job_description_store.get('jd', 'Not set')}\n\n"
+    context += "Candidates:\n"
+    
+    for resume in resumes:
+        context += f"\n--- {resume['name']} (ID: {resume['id']}) ---\n"
+        context += resume['resume_text'][:1000] + "...\n"  # Truncate to manage token limits
+    
+    try:
+        response = await agent.client.chat.completions.create(
+            model=agent.model,
+            messages=[
+                {"role": "system", "content": context},
+                {"role": "user", "content": chat.message}
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
+        
+        answer = response.choices[0].message.content
+        return {"answer": answer}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 
 # Serve React frontend (production build)
