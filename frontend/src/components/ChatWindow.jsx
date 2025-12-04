@@ -118,7 +118,11 @@ function ChatWindow({ candidates }) {
       const response = await fetch('http://localhost:8000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage })
+        // Send message with conversation history for context
+        body: JSON.stringify({ 
+          message: userMessage,
+          history: messages  // Include previous messages for continuity
+        })
       });
 
       if (!response.ok) throw new Error('Chat request failed');

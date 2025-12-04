@@ -37,6 +37,10 @@ job_description_store = {"jd": jd_storage.load()}
 # Initialize the agent
 agent = ResumeScreeningAgent()
 
+# Chat session state: track when we last summarized to avoid re-summarizing on every request
+# Key: session_id (we'll use a hash of first few messages), Value: last_summarized_count
+chat_summary_tracker = {}
+
 
 class JobDescriptionUpdate(BaseModel):
     job_description: str
@@ -164,6 +168,7 @@ async def delete_candidate(candidate_id: int):
 
 class ChatMessage(BaseModel):
     message: str
+    history: Optional[list[dict]] = []
     candidate_id: Optional[int] = None
 
 
@@ -191,13 +196,106 @@ async def chat_about_candidates(chat: ChatMessage):
         context += f"\n--- {resume['name']} (ID: {resume['id']}) ---\n"
         context += resume['resume_text'][:1000] + "...\n"  # Truncate to manage token limits
     
+    # Build conversation messages with history
+    conversation_messages = [
+        {"role": "system", "content": context}
+    ]
+    
+    # Create a session identifier based on conversation start (first message hash)
+    # This allows us to track when we last summarized this conversation
+    session_id = None
+    current_history_length = len(chat.history) if chat.history else 0
+    
+    if chat.history and len(chat.history) >= 3:
+        # Use hash of first 3 messages as session ID
+        import hashlib
+        session_key = str(chat.history[:3])
+        session_id = hashlib.md5(session_key.encode()).hexdigest()
+    
+    # Smart history management: summarize every 10 messages after reaching 20
+    should_summarize = False
+    if chat.history and len(chat.history) > 20:
+        if session_id:
+            last_summarized = chat_summary_tracker.get(session_id, 0)
+            # Summarize if we've added 10+ messages since last summarization
+            if current_history_length - last_summarized >= 10:
+                should_summarize = True
+                chat_summary_tracker[session_id] = current_history_length
+        else:
+            # No session tracking, summarize once at 20
+            should_summarize = True
+    
+    if should_summarize:
+        # Summarization strategy:
+        # - Keep last 10 messages in full detail (recent context)
+        # - Summarize everything before that (including previous summaries)
+        # 
+        # Examples:
+        # At 21 msgs: Summarize 1-11, keep 12-21
+        # At 30 msgs: Summarize 1-20 (includes old summary of 1-11 + msgs 12-20), keep 21-30  
+        # At 40 msgs: Summarize 1-30 (includes old summary of 1-20 + msgs 21-30), keep 31-40
+        
+        older_messages = chat.history[:-10]  # Everything except last 10
+        recent_messages = chat.history[-10:]  # Last 10 messages (full detail)
+        
+        # Extract existing summary and new messages to summarize
+        existing_summary = ""
+        messages_to_summarize = []
+        
+        for msg in older_messages:
+            # Check if this is a previous summary (system role with summary marker)
+            if msg.get('role') == 'system' and 'Previous conversation summary:' in msg.get('content', ''):
+                # Found previous summary - extract it
+                existing_summary = msg['content']
+            else:
+                # Regular user/assistant message - needs to be summarized
+                messages_to_summarize.append(msg)
+        
+        # Build cumulative summary prompt
+        summary_prompt = ""
+        if existing_summary:
+            # We have a previous summary - build on it
+            # This creates the cumulative effect: old summary + new messages
+            summary_prompt += f"{existing_summary}\n\nContinuing from that summary, also summarize these additional messages:\n\n"
+        else:
+            # First summarization - no previous summary exists
+            summary_prompt += "Summarize the following conversation concisely, focusing on key points, decisions, and candidate preferences discussed:\n\n"
+        
+        for msg in messages_to_summarize:
+            summary_prompt += f"{msg['role'].upper()}: {msg['content']}\n"
+        
+        try:
+            summary_response = await agent.client.chat.completions.create(
+                model=agent.model,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that summarizes conversations concisely. When given a previous summary, integrate it with new messages to create a comprehensive but concise summary."},
+                    {"role": "user", "content": summary_prompt}
+                ],
+                temperature=0.3,
+                max_tokens=300
+            )
+            
+            summary = summary_response.choices[0].message.content
+            
+            # Add summary as system message, then recent history
+            conversation_messages.append({"role": "system", "content": f"Previous conversation summary: {summary}"})
+            conversation_messages.extend(recent_messages)
+        except Exception as e:
+            # If summarization fails, fall back to just using recent messages
+            print(f"Summarization failed: {e}")
+            conversation_messages.extend(recent_messages)
+    
+    elif chat.history:
+        # Less than 20 messages, just use all of them
+        conversation_messages.extend(chat.history)
+    
+    # Add current user message
+    conversation_messages.append({"role": "user", "content": chat.message})
+    
     try:
         response = await agent.client.chat.completions.create(
             model=agent.model,
-            messages=[
-                {"role": "system", "content": context},
-                {"role": "user", "content": chat.message}
-            ],
+            messages=conversation_messages,
             temperature=0.7,
             max_tokens=500
         )

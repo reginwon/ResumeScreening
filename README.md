@@ -2,6 +2,7 @@
 
 An intelligent resume screening application that uses AI to analyze candidate resumes against job descriptions. Built with FastAPI backend and React frontend.
 
+
 ## 🎯 Features
 
 - **Job Description Management**: Update and store job descriptions with auto-save to file
