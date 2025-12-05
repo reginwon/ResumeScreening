@@ -14,15 +14,20 @@ An intelligent resume screening application that uses AI to analyze candidate re
   - Candidate strengths and gaps
   - Detailed skill assessments (Technical, Experience, Education, Communication)
   - Hiring recommendations
-- **AI Chat Assistant**: Ask questions about candidates with markdown support (tables, lists, code blocks)
+- **AI Chat Assistant**: Ask questions about candidates with conversation memory and markdown support (tables, lists, code blocks)
 - **Modern UI/UX**:
-  - Floating sidebars (candidates list & chat) with toggle buttons
+  - Wider floating sidebars (700px candidates, 600px chat) - hidden by default
+  - Full-height sidebars matching page height
+  - Dynamic layout: content adjusts when sidebars toggle
+  - No overlap between sidebars and main content
+  - Resume preview aligns perfectly with chat sidebar when visible
   - Auto-scaling panels to fit screen size
   - PDF resume preview with placeholder
   - Toast notifications (non-blocking)
   - Responsive layout with 3-panel design
   - Chat history persistence (localStorage)
   - Markdown table rendering in chat
+  - Smart conversation summarization (cumulative, dynamic token allocation)
 
 ## 🏗️ Architecture
 
@@ -221,18 +226,23 @@ Frontend dev server: `http://localhost:3000`
    - Analysis creates a new candidate in the database
 
 3. **View Candidates**:
-   - Left sidebar shows all candidates with 5-star ratings
+   - Left sidebar shows all candidates with 5-star ratings (700px wide, hidden by default)
+   - Full-height sidebar from top to bottom of page
    - Columns: Name, Date, Technical Skills, Experience, Education, Communication, Overall
    - Click any candidate row to view detailed analysis
    - Toggle sidebar visibility with arrow button
+   - When visible, main content shifts right to avoid overlap
 
 4. **Chat with AI**:
-   - Right sidebar contains AI chat assistant
+   - Right sidebar contains AI chat assistant (600px wide, hidden by default)
    - Ask questions like "Who has the most experience?" or "Compare top 2 candidates"
    - Supports markdown formatting including tables
-   - Chat history persists in browser
+   - Conversation memory: AI remembers context across messages
+   - Smart summarization: Every 10 messages after 20, cumulative summaries preserve long conversations
+   - Chat history persists in browser localStorage
    - Clear history button available
    - Toggle sidebar visibility with arrow button
+   - When visible, chat perfectly overlays the Resume preview area
 
 5. **Review Analysis**:
    - See match score, strengths, gaps
@@ -256,9 +266,11 @@ Frontend dev server: `http://localhost:3000`
 - **`DELETE /api/candidates/{id}`**: Delete a candidate
 
 ### Chat
-- **`POST /api/chat`**: Chat with AI about candidates
-  - Body: `{"message": "your question"}`
+- **`POST /api/chat`**: Chat with AI about candidates with conversation memory
+  - Body: `{"message": "your question", "history": [...]}`
   - Returns: AI response with candidate context
+  - Features: Cumulative conversation summarization (every 10 messages after 20)
+  - Dynamic token allocation: grows with conversation length (200-1500 tokens)
 
 ### Health
 - **`GET /api/health`**: Health check endpoint
@@ -283,11 +295,15 @@ Frontend dev server: `http://localhost:3000`
 
 ### Key Features Implementation
 
-- **Floating Sidebars**: CSS transforms for smooth slide in/out animations
-- **PDF Preview**: Blob URLs with iframe embedding
+- **Floating Sidebars**: CSS transforms for smooth slide in/out animations, no overlap with main content
+- **Dynamic Layout**: Main content uses padding that adjusts based on which sidebars are visible
+- **Relative API URLs**: Frontend uses `/api/*` paths for seamless local and Azure deployment
+- **PDF Preview**: Blob URLs with iframe embedding, aligns perfectly with chat sidebar
 - **Auto-scaling Panels**: CSS calc() for dynamic height based on viewport
 - **Markdown Rendering**: Custom parser with table support in `formatMarkdown()`
 - **Toast Notifications**: Fixed position with auto-dismiss (3s timeout)
+- **Conversation Memory**: Backend tracks chat sessions with MD5 hash-based session IDs
+- **Smart Summarization**: Cumulative summarization every 10 messages, dynamic token allocation (200-1500)
 - **Data Persistence**: SQLite for candidates, file storage for job description, localStorage for chat history
 
 ## 🔐 Environment Variables
@@ -367,7 +383,13 @@ Quick deploy to Azure Web App:
 
 ## 🎨 UI/UX Highlights
 
-- **3-Panel Layout**: Floating candidates sidebar (left), main content (center), chat sidebar (right)
+- **3-Panel Layout**: Floating candidates sidebar (700px, left), main content (center), chat sidebar (600px, right)
+- **Smart Sidebar Behavior**: 
+  - Both sidebars hidden by default
+  - Toggle independently with arrow buttons
+  - Main content dynamically adjusts padding to prevent overlap
+  - Full-height sidebars (100vh) for maximum space utilization
+- **Seamless Integration**: Chat sidebar perfectly aligns over Resume preview when visible
 - **Responsive Design**: Adapts to screen sizes with media queries
 - **Smooth Animations**: CSS transitions for sidebar toggles, toast notifications
 - **Visual Feedback**: Toast notifications, loading states, hover effects
