@@ -1,7 +1,7 @@
 import React from 'react';
-import { User, Star, Briefcase, GraduationCap, MessageCircle, Award } from 'lucide-react';
+import { User, Star, Briefcase, GraduationCap, MessageCircle, Award, Home } from 'lucide-react';
 
-function CandidatesList({ candidates, onSelectCandidate, selectedCandidateId }) {
+function CandidatesList({ candidates, onSelectCandidate, selectedCandidateId, onMainPage }) {
   if (!candidates || candidates.length === 0) {
     return (
       <div className="candidates-list">
@@ -40,6 +40,17 @@ function CandidatesList({ candidates, onSelectCandidate, selectedCandidateId }) 
       </div>
 
       <div className="candidates-table-container">
+        {/* Main Page Navigation */}
+        <div 
+          className={`nav-item main-page-nav ${!selectedCandidateId ? 'selected' : ''}`}
+          onClick={onMainPage}
+        >
+          <Home size={18} />
+          <span>Main Page</span>
+        </div>
+
+        <div className="nav-divider"></div>
+
         <table className="candidates-table">
           <thead>
             <tr>

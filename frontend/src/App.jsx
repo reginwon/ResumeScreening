@@ -16,7 +16,6 @@ function App() {
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [uploadedResumeFile, setUploadedResumeFile] = useState(null);
   const [resumePreviewUrl, setResumePreviewUrl] = useState(null);
-  const [isCandidatesVisible, setIsCandidatesVisible] = useState(false);
   const [toast, setToast] = useState(null);
 
   // Show toast notification
@@ -71,6 +70,11 @@ function App() {
     } catch (error) {
       alert('Error loading candidate details: ' + error.message);
     }
+  };
+
+  const handleMainPage = () => {
+    setSelectedCandidateId(null);
+    setAnalysisResult(null);
   };
 
   const handleJobDescriptionUpdate = async (jd) => {
@@ -153,20 +157,14 @@ function App() {
       </header>
 
       <main className="app-main">
-        <div className={`main-content-wrapper ${isCandidatesVisible ? 'candidates-visible' : ''} ${isChatVisible ? 'chat-visible' : ''}`}>
-          {/* Left Sidebar: Candidates List */}
-          <div className={`candidates-sidebar ${isCandidatesVisible ? 'visible' : 'hidden'}`}>
-            <button 
-              className="candidates-toggle-btn"
-              onClick={() => setIsCandidatesVisible(!isCandidatesVisible)}
-              title={isCandidatesVisible ? 'Hide Candidates' : 'Show Candidates'}
-            >
-              {isCandidatesVisible ? '←' : '→'}
-            </button>
+        <div className={`main-content-wrapper candidates-visible ${isChatVisible ? 'chat-visible' : ''}`}>
+          {/* Left Sidebar: Navigation Panel */}
+          <div className="candidates-sidebar visible">
             <div className="candidates-sidebar-content">
               <CandidatesList 
                 candidates={candidates}
                 onSelectCandidate={loadCandidateDetail}
+                onMainPage={handleMainPage}
                 selectedCandidateId={selectedCandidateId}
               />
             </div>
@@ -189,7 +187,7 @@ function App() {
               </div>
             ) : (
               <>
-                {/* Job Description and Resume Preview - Side by Side */}
+                {/* Job Description and Resume Upload - Side by Side */}
                 <div className="jd-resume-grid">
                   {/* Job Description - Left */}
                   <div className="panel jd-panel">
@@ -203,12 +201,12 @@ function App() {
                     />
                   </div>
 
-                  {/* Resume PDF Preview - Right */}
-                  <div className="panel resume-preview-panel">
-                    <div className="panel-header">
-                      <FileText size={24} />
-                      <h2>Uploaded Resume</h2>
-                      {resumePreviewUrl && (
+                  {/* Resume Upload or Preview - Right */}
+                  {resumePreviewUrl ? (
+                    <div className="panel resume-preview-panel">
+                      <div className="panel-header">
+                        <FileText size={24} />
+                        <h2>Uploaded Resume</h2>
                         <button 
                           className="close-preview-btn"
                           onClick={() => {
@@ -219,37 +217,42 @@ function App() {
                         >
                           ×
                         </button>
-                      )}
-                    </div>
-                    <div className="resume-preview-container">
-                      {resumePreviewUrl ? (
-                        <iframe
-                          src={resumePreviewUrl}
-                          className="resume-pdf-viewer"
-                          title="Resume Preview"
-                        />
-                      ) : (
-                        <div className="resume-placeholder">
-                          <Upload size={48} />
-                          <p>No resume uploaded yet</p>
-                          <p className="placeholder-hint">Upload a resume to see preview here</p>
+                      </div>
+                      <div className="resume-content-wrapper">
+                        <div className="resume-preview-container">
+                          <iframe
+                            src={resumePreviewUrl}
+                            className="resume-pdf-viewer"
+                            title="Resume Preview"
+                          />
                         </div>
-                      )}
+                        <div className="resume-preview-footer">
+                          <button 
+                            className="upload-another-btn btn-primary"
+                            onClick={() => {
+                              setResumePreviewUrl(null);
+                              setUploadedResumeFile(null);
+                            }}
+                          >
+                            <Upload size={18} />
+                            Upload Another Resume
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                {/* Resume Upload */}
-                <div className="panel">
-                  <div className="panel-header">
-                    <Upload size={24} />
-                    <h2>Upload Resume</h2>
-                  </div>
-                  <ResumeUpload 
-                    onUpload={handleResumeUpload}
-                    isLoading={isLoading}
-                    disabled={!jobDescription}
-                  />
+                  ) : (
+                    <div className="panel">
+                      <div className="panel-header">
+                        <Upload size={24} />
+                        <h2>Upload Resume</h2>
+                      </div>
+                      <ResumeUpload 
+                        onUpload={handleResumeUpload}
+                        isLoading={isLoading}
+                        disabled={!jobDescription}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Analysis Result */}
